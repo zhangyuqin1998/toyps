@@ -6,9 +6,6 @@ namespace toyps {
 
 class NodeBase {
  public:
-  virtual void Pull() = 0;
-  virtual void Push() = 0;
-
   virtual void Start() = 0;
   virtual void Finish() = 0;
   

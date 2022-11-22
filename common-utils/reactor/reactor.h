@@ -1,6 +1,7 @@
 # pragma once
 
 #include "common-utils/threadpool/threadpool.h"
+#include "rpc/server_rpc.h"
 
 #include <memory>
 #include <sys/epoll.h> //epoll_ctl()

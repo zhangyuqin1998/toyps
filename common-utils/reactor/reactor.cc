@@ -30,6 +30,7 @@ bool Reactor::DelFd(int fd) {
   if(fd < 0) return false;
   epoll_event ev = {0};
   return 0 == epoll_ctl(epollFd_, EPOLL_CTL_DEL, fd, &ev);
+  close(fd);
 }
 
 int Reactor::Wait(int timeoutMs) {
@@ -65,8 +66,7 @@ void Reactor::Start() {
         DealConnect();
       } else if(events & (EPOLLRDHUP | EPOLLHUP | EPOLLERR)){
         CloseClient(&clients_[fd]);
-      }
-      else if(events & EPOLLIN){
+      } else if(events & EPOLLIN){
         assert(clients_.count(fd) > 0);
         ThreadPool::GetInstance()->PushTask(std::bind(&Reactor::DealRead, this, &clients_[fd]));
       }
@@ -82,15 +82,17 @@ void Reactor::DealConnect() {
   struct sockaddr_in addr;
   socklen_t len = sizeof(addr);
   int clientFd = accept(serverFd_, (struct sockaddr *)&addr, &len);
-  AddFd(clientFd, EPOLLIN | EPOLLET);
-  SetNonblock(clientFd);
 
   char ipAddress[INET_ADDRSTRLEN];
   inet_ntop(AF_INET, &(addr.sin_addr), ipAddress, INET_ADDRSTRLEN);
 
   std::cout << "Client connection--- " << ipAddress << ":" << addr.sin_port << " as fd " << clientFd << std::endl;
 
-  assert(clientFd > 0);
+  if(clientFd <= 0) {
+    return;
+  }
+
+  AddFd(clientFd, EPOLLIN | EPOLLET);
   Client client(clientFd, addr);
   clients_[clientFd] = client;
 }
@@ -102,27 +104,11 @@ void Reactor::CloseClient(Client* client){
 }
 
 void Reactor::DealRead(Client* client) {
-  char buf[1024];
-  while(true){    //由于使用非阻塞IO，需要不断读取，直到全部读取完毕
-    int fd = client->fd;
-    ssize_t bytes_read = read(fd, buf, sizeof(buf));
-
-    if(bytes_read > 0){
-      std::cout << "Receive msg from " << fd << " :" << buf << std::endl;
-      write(fd, buf, bytes_read);
-    } else if(bytes_read == -1 && errno == EINTR){  //客户端正常中断、继续读取
-      continue;
-    } else if(bytes_read == -1 && ((errno == EAGAIN) || (errno == EWOULDBLOCK))){//非阻塞IO，这个条件表示数据全部读取完毕
-      //该fd上数据读取完毕
-      break;
-    } else if(bytes_read == 0){  //EOF事件，一般表示客户端断开连接
-      CloseClient(client);   //关闭socket会自动将文件描述符从epoll树上移除
-      break;
-    }
+  int ret = ServerRpcHandle::GetInstance()->DealRead(client->fd);
+  if (ret) {
+  CloseClient(client);   //关闭socket会自动将文件描述符从epoll树上移除
   }
-
 }
-
 
 int Reactor::SetNonblock(int fd) {
     assert(fd >= 0);
