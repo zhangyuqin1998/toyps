@@ -11,6 +11,7 @@ id_(-1) {
 
 void WorkerNode::Start() {
   // connector_->Start();
+  auto ret = std::async(std::launch::async, &WorkerNode::HeartBeat, this);
 }
 
 void WorkerNode::Finish() {}
@@ -44,6 +45,17 @@ void WorkerNode::Echo(std::string msg) {
     std::cout << "request failed: %s" << controller.ErrorText().c_str();
   } else {
     std::cout << "get Echo msg " << response.msg() << std::endl;
+  }
+}
+
+void WorkerNode::HeartBeat() {
+  server_rpc::HeartBeatRequest   request;
+  server_rpc::HeartBeatResponse  response;
+  RpcController controller;
+  while (1) {
+    request.set_id(id_);
+    stub_->HeartBeat(&controller, &request, &response, nullptr); 
+    usleep(300 * 1000);
   }
 }
 

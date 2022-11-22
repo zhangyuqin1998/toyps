@@ -8,8 +8,8 @@
 #define BUFSIZE         1024
 int main() {
   toyps::WorkerNode worker_node(SERVER_IP, SERVER_PORT);
-  worker_node.Start();
   worker_node.Register();
+  worker_node.Start();
   while(true){
     char buf[BUFSIZE];
     memset(buf, 0, sizeof(buf));

@@ -12,9 +12,8 @@
 #include <unordered_map>
 #include <string>
 #include <mutex>
-// #include <chrono>
-// #include <sys/time.h>
-// #include <ctime>
+#include <chrono>
+#include <future>
 
 namespace toyps {
 
@@ -27,7 +26,7 @@ class ServerNode : public NodeBase, public server_rpc::ServerRpc {
   using KVNameSpace = std::string;
   using KVpairs = std::unordered_map<int, float>;
   using WorkerId = uint32_t;
-
+  using TimePoint = std::chrono::_V2::steady_clock::time_point;
  public:
   ServerNode(std::string ip, int port);
   ~ServerNode() = default;
@@ -39,10 +38,14 @@ class ServerNode : public NodeBase, public server_rpc::ServerRpc {
   SynchronizationType GetSynchronizationType() { return synchronization_type_; }
 
  private:
-  void HeartBeat();
-  void AcceptWorker();
-  void DeleteWorker();
-  void DispatchId();
+  void ListenHeartBeat();
+  void PrintWorkers();
+
+ private:
+  void HeartBeat(::google::protobuf::RpcController* controller,
+                const server_rpc::HeartBeatRequest* request,
+                server_rpc::HeartBeatResponse* response,
+                ::google::protobuf::Closure* done);
 
   void Register(::google::protobuf::RpcController* controller,
                 const server_rpc::RegisterRequest* request,
@@ -59,16 +62,16 @@ class ServerNode : public NodeBase, public server_rpc::ServerRpc {
 
  private:
   std::unordered_map<KVNameSpace, KVpairs> params_;
-  std::unordered_map<WorkerId, int> workers_;
-  // std::unordered_map<WorkerId, std::chrono::milliseconds;> heat_beat_info_;
 
-  // std::chrono::milliseconds interval_;
+  std::unordered_map<WorkerId, TimePoint> workers_;
+
+  std::chrono::duration<double> timeout_;
 
   spReactor reactor_;
 
   SynchronizationType synchronization_type_;
 
-  uint32_t cur_id_;
+  WorkerId cur_id_;
 
   std::mutex mtx_;
 };

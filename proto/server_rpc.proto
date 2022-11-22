@@ -18,7 +18,15 @@ message EchoResponse {
     required string msg = 4;
 }
 
+message HeartBeatRequest {
+    required uint32 id = 5;
+}
+
+message HeartBeatResponse {
+}
+
 service ServerRpc {
     rpc Register(RegisterRequest) returns (RegisterResponse);
     rpc Echo(EchoRequest) returns (EchoResponse);
+    rpc HeartBeat(HeartBeatRequest) returns (HeartBeatResponse);
 }

@@ -7,7 +7,7 @@
 #include "proto/meta.pb.h"
 #include "rpc/channel.h"
 #include "rpc/controller.h"
-
+#include <future>
 #include <string>
 // #include <chrono>
 // #include <sys/time.h>
@@ -23,8 +23,11 @@ class WorkerNode : public NodeBase {
   void Start();
   void Finish();
 
+ public:
   void Pull();
   void Push();
+
+  void HeartBeat();
 
   void Register();
 

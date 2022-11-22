@@ -29,8 +29,9 @@ bool Reactor::ModFd(int fd, uint32_t events) {
 bool Reactor::DelFd(int fd) {
   if(fd < 0) return false;
   epoll_event ev = {0};
-  return 0 == epoll_ctl(epollFd_, EPOLL_CTL_DEL, fd, &ev);
   close(fd);
+  // std::cout << "Client close--- " << fd << std::endl;
+  return 0 == epoll_ctl(epollFd_, EPOLL_CTL_DEL, fd, &ev);
 }
 
 int Reactor::Wait(int timeoutMs) {
@@ -86,7 +87,7 @@ void Reactor::DealConnect() {
   char ipAddress[INET_ADDRSTRLEN];
   inet_ntop(AF_INET, &(addr.sin_addr), ipAddress, INET_ADDRSTRLEN);
 
-  std::cout << "Client connection--- " << ipAddress << ":" << addr.sin_port << " as fd " << clientFd << std::endl;
+  // std::cout << "Client connection--- " << ipAddress << ":" << addr.sin_port << " as fd " << clientFd << std::endl;
 
   if(clientFd <= 0) {
     return;
@@ -99,7 +100,6 @@ void Reactor::DealConnect() {
 
 void Reactor::CloseClient(Client* client){
   DelFd(client->fd);
-  std::cout << "Client leave--- " << client->fd << std::endl;
   clients_.erase(clients_.find(client->fd));
 }
 
